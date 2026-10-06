@@ -224,13 +224,27 @@ MString *pgraph_glsl_gen_vsh(const VshState *state, GenVshGlslOptions opts)
         "vec4 NaNToValue(vec4 src, float replacement) {\n"
         "  return mix(src, vec4(replacement), isnan(src));\n"
         "}\n"
+    );
+
+    mstring_append_fmt(header,
         "\n"
+        "#define SURFACE_SCALE %u\n"
         // Xbox NV2A rasterizer appears to have 4 bit precision fixed-point
         // fractional part and to convert floating-point coordinates by
-        // by truncating (not flooring).
-        "vec2 roundScreenCoords(vec2 pos) {\n"
-        "  return trunc(pos * 16.0f) / 16.0f;\n"
-        "}\n");
+        // truncating (not flooring).
+        "vec2 roundScreenCoords(vec2 pos, float w) {\n"
+        "  vec2 rounded = trunc(pos * 16.0f) / 16.0f;\n"
+        "#if SURFACE_SCALE > 1\n"
+        "  if (abs(w - 1.0f) < 0.001f) {\n"
+        "    vec2 f = abs(fract(rounded) - vec2(0.5f));\n"
+        "    vec2 is_half = vec2(lessThanEqual(f, vec2(0.0625f)));\n"
+        "    float delta = 0.5f * (float(SURFACE_SCALE) - 1.0f) / float(SURFACE_SCALE);\n"
+        "    rounded -= is_half * delta;\n"
+        "  }\n"
+        "#endif\n"
+        "  return rounded;\n"
+        "}\n",
+        state->surface_scale_factor ? state->surface_scale_factor : 1);
 
     pgraph_glsl_get_vtx_header(header, opts.vulkan, state->smooth_shading,
                                false, opts.prefix_outputs, false);

@@ -754,8 +754,8 @@ void pgraph_glsl_gen_vsh_prog(uint16_t version, const uint32_t *tokens,
         /* The shaders leave the result in screen space, while OpenGL expects it
          * in clip space.
          */
-        "  oPos.xy = roundScreenCoords(oPos.xy);\n"
         "  oPos.w = clampAwayZeroInf(oPos.w);\n"
+        "  oPos.xy = roundScreenCoords(oPos.xy, oPos.w);\n"
         "  vec4 vtxPos = oPos;\n"
         "  oPos.xy = (2.0f * oPos.xy - surfaceSize) / surfaceSize;\n"
         "  oPos.z = oPos.z / clipRange.y;\n"
